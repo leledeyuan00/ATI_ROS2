@@ -96,8 +96,8 @@ namespace ati_sensor
         geometry_msgs::msg::WrenchStamped ati_sensor_msg = geometry_msgs::msg::WrenchStamped();
 
         ati_sensor_msg.header.frame_id = "ati_sensor";
-        auto loop_rate = std::chrono::milliseconds(1000/ update_rate_);
         
+        rclcpp::Rate rate(update_rate_);
         RCLCPP_INFO(this->get_logger(),"ATI Sensor ROS Node Running");
         while (rclcpp::ok())
         {
@@ -120,11 +120,7 @@ namespace ati_sensor
             
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-            if (duration < loop_rate)
-            {
-                std::this_thread::sleep_for(loop_rate - duration);
-            }
-            // osal_usleep(2000);
+            rate.sleep();
         }
         // stop sensor
         // ati_sensor_->stop_ethercat();

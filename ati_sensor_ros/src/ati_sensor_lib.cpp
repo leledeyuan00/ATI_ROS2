@@ -15,7 +15,7 @@ bool ati_sensor_lib::ati_setup(std::string ether_name)
    * 4 - 7: 0=No filter, 1-8 Reference pp26.
    * 0 - 3: Clear and Set bias
   */
-  control_code_ = 0x0080; // 
+  control_code_ = 0x3080; // 
   ec_SDOwrite(1, 0x7010, 0x01, FALSE, sizeof(control_code_), &control_code_, EC_TIMEOUTRXM);
   
 
@@ -158,14 +158,21 @@ int* ati_sensor_lib::ati_read()
 
 void ati_sensor_lib::ati_write()
 {
-    int rdl = 4 *6; // 4 bytes per int * 6 ints
-    /* end one valid process data to make outputs in slaves happy */
+    /* Send one valid process data to make outputs in slaves happy */
     ec_send_processdata();
-    ec_receive_processdata(EC_TIMEOUTRET);
-    // std::cout << "Write control code: " << std::hex << control_code_ << std::endl;
+    wkc_ = ec_receive_processdata(EC_TIMEOUTRET);
+    
     if (pdo_transfer_active_)
     {            
-      ec_SDOread(1, 0x6000, 0x01, TRUE, &rdl, &FT_data_, EC_TIMEOUTRXM);
+      /* Extract F/T data directly from PDO input buffer (fast, real-time) */
+      /* ATI sensor outputs 6 int32_t values (Fx, Fy, Fz, Tx, Ty, Tz) at index 0x6000 */
+      int32_t *pdo_input = (int32_t *)ec_slave[1].inputs;
+      FT_data_[0] = pdo_input[0];  // Fx
+      FT_data_[1] = pdo_input[1];  // Fy
+      FT_data_[2] = pdo_input[2];  // Fz
+      FT_data_[3] = pdo_input[3];  // Tx
+      FT_data_[4] = pdo_input[4];  // Ty
+      FT_data_[5] = pdo_input[5];  // Tz
     }
 }
 
